@@ -30,7 +30,7 @@ class API < Sinatra::Base
 				team_id = request_data['team_id']
 				event_data = request_data['event']
 
-				case even_data['type']
+				case event_data['type']
 		   			when 'team_join'
 						Events.reaction_added(team_id,event_data)
 					else
@@ -50,5 +50,19 @@ class Events
 		}
 		
 		self.send_response(team_id, user_id)
+	end
+
+	def self.message(team_id, event_data)
+		user_id = event_data['user']
+
+		unless user_id == $teams[team_id][:bot_user_id]
+			if event_data['attachments'] && event_data['attachments'].first['is_share']
+				user_id = event_data['user']
+				ts = event_data['attachments'].first['ts']
+				channel = event_data['channel']
+				SlackTutorial.update_item(team_id, user_id, SlackTutorial.items[:share])
+				self.send_response(team_id, user_id, channel, ts)
+			end
+		end
 	end
 end
