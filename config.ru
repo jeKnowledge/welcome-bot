@@ -1,2 +1,4 @@
-require './app'
-run Sinatra::Application
+require './auth'
+require './bot'
+
+run Rack::Cascade.new [API, Auth]
