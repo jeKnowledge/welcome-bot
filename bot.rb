@@ -16,13 +16,11 @@ end
 class API < Sinatra::Base
 	post '/events' do 
 		request_data = JSON.parse(request.body.read)
-
 		unless SLACK_CONFIG[:slack_verification_token] == request_data['token']
 			halt 403, "Invalid Slack verification token received: #{request_data['token']}"
 		end
 
 		case request_data['type']
-			
 			when 'url_verification'
 				request_data['challenge']
 
@@ -31,8 +29,8 @@ class API < Sinatra::Base
 				event_data = request_data['event']
 
 				case event_data['type']
-		   			when 'team_join'
-						Events.reaction_added(team_id,event_data)
+					when 'team_join'
+						Events.user_join(team_id,event_data)
 					else
 						puts "Unexpected event:\n"
 						puts JSON.pretty_generate(request_data)
@@ -46,7 +44,7 @@ class Events
 	def self.user_join(team_id, event_data)
 		user_id = event_data['user']['id']
 		$teams[team_id][user_id] = {
-			tutorial_content: SlackTutorial.new
+			tutorial_content: Welcome_bot.new
 		}
 		
 		self.send_response(team_id, user_id)
@@ -60,7 +58,7 @@ class Events
 				user_id = event_data['user']
 				ts = event_data['attachments'].first['ts']
 				channel = event_data['channel']
-				SlackTutorial.update_item(team_id, user_id, SlackTutorial.items[:share])
+				Welcome_bot.update_item(team_id, user_id, Welcome_bot.items[:share])
 				self.send_response(team_id, user_id, channel, ts)
 			end
 		end
