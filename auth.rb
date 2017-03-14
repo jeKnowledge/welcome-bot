@@ -2,16 +2,16 @@ require 'sinatra/base'
 require 'slack-ruby-client'
 
 SLACK_CONFIG = {
-  slack_client_id: ENV["SLACK_CLIENT_ID"],
-  slack_api_secret: ENV["SLACK_API_SECRET"],
-  slack_redirect_uri: ENV["SLACK_REDIRECT_URI"],
-  slack_verification_token: ENV["SLACK_VERIFICATION_TOKEN"],
+  slack_client_id: ENV['SLACK_CLIENT_ID'],
+  slack_api_secret: ENV['SLACK_API_SECRET'],
+  slack_redirect_uri: ENV['SLACK_REDIRECT_URI'],
+  slack_verification_token: ENV['SLACK_VERIFICATION_TOKEN'],
 }
 
 missing_params = SLACK_CONFIG.select { |_, value| value.nil? }
 if missing_params.any?
-  error_msg = missing_params.keys.join(', ').upcase
-  raise 'Missing Slack config variables: #{error_msg}'
+  error_msg = missing_params.keys.join(", ").upcase
+  raise "Missing Slack config variables: #{error_msg}"
 end
 
 BOT_SCOPE = 'bot'
@@ -63,6 +63,9 @@ class Auth < Sinatra::Base
       $teams[team_id]['client'] = create_slack_client(response['bot']['bot_access_token'])
 
       status 200
+      body "Yay! Auth succeeded! You're awesome!"
+    rescue Slack::Web::Api::Error => e
+      status 403
       body "Auth failed! Reason: #{e.message}<br/>#{add_to_slack_button}"
     end
   end

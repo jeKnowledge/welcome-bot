@@ -63,4 +63,24 @@ class Events
 			end
 		end
 	end
+
+  def self.send_response(team_id, user_id, channel = user_id, ts=nil)
+    if ts
+      $teams[team_id]['client'].chat_update(
+        as_user: 'true',
+        channel: channel,
+        ts: ts,
+        text: Welcome_bot.welcome_text,
+        attachments: $teams[team_id][user_id][:tutorial_content]
+      )
+    else
+      $teams[team_id]['client'].chat_postMessage(
+        as_user: 'true',
+        channel: channel,
+        ts: ts,
+        text: Welcome_bot.welcome_text,
+        attachments: $teams[team_id][user_id][:tutorial_content]
+      )
+    end
+  end
 end
