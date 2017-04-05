@@ -2,10 +2,10 @@ require 'sinatra/base'
 require 'slack-ruby-client'
 
 SLACK_CONFIG = {
-  slack_client_id: ENV['SLACK_CLIENT_ID'],
-  slack_api_secret: ENV['SLACK_API_SECRET'],
-  slack_redirect_uri: ENV['SLACK_REDIRECT_URI'],
-  slack_verification_token: ENV['SLACK_VERIFICATION_TOKEN'],
+  slack_client_id: '2770728157.126776116850',
+  slack_api_secret: 'c443a77aa5ce11581c13bceeea480e6c',
+  slack_redirect_uri: 'https://98674d4a.ngrok.io/finish_auth', 
+  slack_verification_token: 'J7ZN5FGrdMj6SO6quQnJwyn2',
 }
 
 missing_params = SLACK_CONFIG.select { |_, value| value.nil? }
@@ -27,10 +27,11 @@ def create_slack_client(slack_api_secret)
 end
 
 class Auth < Sinatra::Base
-  add_to_slack_button = %(<a href=\"https://slack.com/oauth/authorize?scope=#{BOT_SCOPE}&client_id=#{SLACK_CONFIG[:slack_client_id]}&redirect_uri=#{SLACK_CONFIG[:redirect_uri]}\">
-        <img alt=\"Add to Slack\" height=\"40\" width=\"139\" src=\"https://platform.slack-edge.com/img/add_to_slack.png\"/>
-            </a>
-  ) 
+  SLACK_BUTTON = %(
+    <a href="https://slack.com/oauth/authorize?scope=#{BOT_SCOPE}&client_id=#{SLACK_CONFIG[:slack_client_id]}&redirect_uri=#{SLACK_CONFIG[:redirect_uri]}\">
+      <img alt=\"Add to Slack\" height=\"40\" width=\"139\" src=\"https://platform.slack-edge.com/img/add_to_slack.png\"/>
+    </a>
+  )
 
   get '/' do
     redirect '/begin_auth'
@@ -38,10 +39,10 @@ class Auth < Sinatra::Base
 
   get '/begin_auth' do
     status 200
-    body add_to_slack_button
+    body SLACK_BUTTON
   end
 
-  get '/finsish_auth' do
+  get '/finish_auth' do
     client = Slack::Web::Client.new
 
     begin 

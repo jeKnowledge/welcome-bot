@@ -2,15 +2,32 @@ require 'sinatra/base'
 require 'slack-ruby-client'
 
 class Welcome_bot
-	def self.welcome_text
-		"Welcome to Jek! We're so glad you're here.\nGet started by completing the steps below."
-	end
+  class << self
+    def welcome_text
+      "Welcome to Jek! We're so glad you're here.\nGet started by completing the steps below."
+    end
 
-	def self.tutorial_json
-		tutorial_file = File.read('welcome.json')
-		tutorial.json = JSON.parse(tutorial_file)
-		attachments = tutorial_json["attachments"]
-	end
+    def questions_json
+      tutorial_file = File.read('welcome.json')
+      tutorial_json = JSON.parse(tutorial_file)
+      attachments = tutorial_json["attachments"]
+    end
+
+    def items
+      {reaction: 0, pin: 1, share: 2}
+    end
+
+    def new
+      self.tutorial_json.deep_dup
+    end
+
+    def update_item(team_id,user_id, item_index)
+      puts "JAAAAA"
+      tutorial_item = $teams[team_id][user_id][:tutorial_content][item_index]
+      tutorial_item['text'].sub!(':white_large_square:', ':white_check_mark:')
+      tutorial_item['color'] = '#439FE0'
+    end
+  end
 end
 
 class API < Sinatra::Base
@@ -30,8 +47,10 @@ class API < Sinatra::Base
 
 				case event_data['type']
 					when 'team_join'
-						Events.user_join(team_id,event_data)
-					else
+						Events.user_join(team_id, event_data)
+          when 'reaction_added'
+            Events.reaction_added(team_id, event_data)
+      		else
 						puts "Unexpected event:\n"
 						puts JSON.pretty_generate(request_data)
 				end
@@ -41,46 +60,49 @@ class API < Sinatra::Base
 end
 
 class Events
-	def self.user_join(team_id, event_data)
-		user_id = event_data['user']['id']
-		$teams[team_id][user_id] = {
-			tutorial_content: Welcome_bot.new
-		}
-		
-		self.send_response(team_id, user_id)
-	end
+  class << self
+    def user_join(team_id, event_data)
+      user_id = event_data['user']['id']
+      $teams[team_id][user_id] = {
+        tutorial_content: Welcome_bot.new
+      }
+      send_response(team_id, user_id)
+    end
 
-	def self.message(team_id, event_data)
-		user_id = event_data['user']
+    def reaction_added(team_id, event_data)
+      user_id = event_data['user']
+      puts "@@@@@@@@@@@@@@@@@"
+      puts event_data
+      puts "##########"
+      puts $teams
+      puts "##########"
+      puts user_id
+      if $teams[team_id][user_id]
+        puts "#########"
+        channel = event_data['item']['channel']
+        ts = event_data['item']['ts']
+        Welcome_bot.update_item(team_id, user_id, Welcome_bot.items[:reaction])
+        send_response(team_id, user_id, channel, ts)
+      end
+    end
 
-		unless user_id == $teams[team_id][:bot_user_id]
-			if event_data['attachments'] && event_data['attachments'].first['is_share']
-				user_id = event_data['user']
-				ts = event_data['attachments'].first['ts']
-				channel = event_data['channel']
-				Welcome_bot.update_item(team_id, user_id, Welcome_bot.items[:share])
-				self.send_response(team_id, user_id, channel, ts)
-			end
-		end
-	end
-
-  def self.send_response(team_id, user_id, channel = user_id, ts=nil)
-    if ts
-      $teams[team_id]['client'].chat_update(
-        as_user: 'true',
-        channel: channel,
-        ts: ts,
-        text: Welcome_bot.welcome_text,
-        attachments: $teams[team_id][user_id][:tutorial_content]
-      )
-    else
-      $teams[team_id]['client'].chat_postMessage(
-        as_user: 'true',
-        channel: channel,
-        ts: ts,
-        text: Welcome_bot.welcome_text,
-        attachments: $teams[team_id][user_id][:tutorial_content]
-      )
+    def send_response(team_id, user_id, channel = user_id, ts = nil)
+      if ts
+        $teams[team_id]['client'].chat_update(
+          as_user: 'true',
+          channel: channel,
+          ts: ts,
+          text: Welcome_bot.welcome_text,
+          attachments: $teams[team_id][user_id][:tutorial_content]
+        )
+      else
+        $teams[team_id]['client'].chat_postMessage(
+          as_user: 'true',
+          channel: channel,
+          text: Welcome_bot.welcome_text,
+          attachments: $teams[team_id][user_id][:tutorial_content]
+        )
+      end
     end
   end
 end
